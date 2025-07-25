@@ -32,6 +32,8 @@ public class CarControl extends AbstractControl {
     protected void controlUpdate(float timePerFrame){
         Spatial car = spatial;
         Vector3f cords = new Vector3f(0, 0, 0);
+        // TODO read
+        // https://engineeringdotnet.blogspot.com/2010/04/simple-2d-car-physics-in-games.html
         if (up){
             cords.setY(speed);
         }
