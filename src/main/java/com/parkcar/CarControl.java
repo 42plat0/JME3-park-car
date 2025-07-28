@@ -9,7 +9,13 @@ import com.jme3.scene.control.AbstractControl;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.ViewPort;
 import com.jme3.scene.Spatial;
+import com.jme3.material.Material;
+
+import com.jme3.scene.Geometry;
 import com.jme3.math.Vector3f;
+import com.jme3.ui.Picture;
+import com.jme3.scene.Node;
+import com.jme3.scene.shape.Quad;
 
 /**
  *
@@ -30,17 +36,22 @@ public class CarControl extends AbstractControl {
     
     @Override
     protected void controlUpdate(float timePerFrame){
-        Spatial car = spatial;
         Vector3f cords = new Vector3f(0, 0, 0);
-        // TODO read
-        // https://engineeringdotnet.blogspot.com/2010/04/simple-2d-car-physics-in-games.html
+        Spatial car = spatial;
+
+        System.out.println(car.getClass());
+        // Need: car position centre
+        // Wheel baseline and two wheels at the ends
+        // Rotate rear one
+        // Move in the direction it's pointing
+
         if (up){
             cords.setY(speed);
         }
         else if (down){
             cords.setY(-speed);
-            
         }
+        
         car.move(cords);
     }
     
