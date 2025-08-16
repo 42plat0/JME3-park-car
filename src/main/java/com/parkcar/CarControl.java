@@ -5,19 +5,14 @@
 package com.parkcar;
 
 
-import com.jme3.scene.control.AbstractControl;
-import com.jme3.renderer.RenderManager;
-import com.jme3.renderer.ViewPort;
-import com.jme3.scene.Spatial;
-import com.jme3.material.Material;
-
-import com.jme3.scene.Geometry;
-import com.jme3.math.Vector3f;
-import com.jme3.ui.Picture;
-import com.jme3.scene.Node;
-import com.jme3.scene.shape.Quad;
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Vector3f;
+import com.jme3.renderer.RenderManager;
+import com.jme3.renderer.ViewPort;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
+import com.jme3.scene.control.AbstractControl;
 /**
  *
  * @author arpyg
@@ -27,8 +22,15 @@ public class CarControl extends AbstractControl {
     private final float STEER_ANGLE = FastMath.PI / 8;
 
     public boolean up, down, left, right;
-    private final float speed = 5f;
-    
+    private float carHeading = 0f;
+    private float accel = 8f;
+    private float steerAngle = 0f; // current front wheel angle (radians)
+
+        private float maxSpeed = 300f;    // px/sec^2
+        private float wheelBase = 140f;
+        private float velocity = 0f;      // current velocity in px/sec
+        private float theta = 0f;
+            private Vector3f position = new Vector3f();
     private int width, height;
     
     public CarControl(int width, int height){
@@ -38,56 +40,58 @@ public class CarControl extends AbstractControl {
     }
     
     @Override
-    protected void controlUpdate(float timePerFrame){
-        Vector3f cords = new Vector3f(0, 0, 230);
+    protected void controlUpdate(float tpf){        
         Node car = (Node) spatial;
+        Node frontWheel = (Node) car.getChild("fWheelPivot");
+        Geometry backWheel = (Geometry) car.getChild("backWheel");
 
-        Geometry frontWheel = (Geometry) car.getChild("frontWheel");
-        // Need: car position centre
-        // Wheel baseline and two wheels at the ends
-        // Rotate rear one -- CURRENT how to move rear wheel?
-        // Move in the direction it's pointing
+        handleSteerInput(tpf);
+        handleAccelerationInput();
+        
+        Vector3f fwt = frontWheel.getWorldTranslation();
+        Vector3f bwt = backWheel.getWorldTranslation();
+        
+        carHeading = FastMath.atan2(fwt.getY() - bwt.getY(), fwt.getX() - bwt.getX());
+        
+        Vector3f bwDir = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0);
+        Vector3f fwDir = new Vector3f(FastMath.cos(carHeading + steerAngle), FastMath.sin(carHeading + steerAngle), 0);
 
+        Vector3f bwNewPos = bwt.add(bwDir.mult(velocity * tpf));
+        Vector3f fwNewPos = fwt.add(fwDir.mult(velocity * tpf));
         
-        Quaternion currentWheelRotation = frontWheel.getLocalRotation();
-        Vector3f axis = new Vector3f();
-        float angle = currentWheelRotation.toAngleAxis(axis) * 0.5f * 0.5f;
+        backWheel.setLocalTranslation(bwNewPos);
+        frontWheel.setLocalTranslation(fwNewPos);
         
-        Quaternion carRotation = car.getLocalRotation();
         
-        Vector3f carRotated = carRotation.mult(Vector3f.UNIT_Z);
-        Vector3f rotated = currentWheelRotation.mult(Vector3f.UNIT_Z);
-        
-        System.out.println(angle);
+        frontWheel.setLocalRotation(new Quaternion().fromAngleAxis(steerAngle, Vector3f.UNIT_Z));
 
-//                System.out.println(carRotation.mult(currentWheelRotation));
-//                System.out.println(carRotation.add(currentWheelRotation));
-
-        // Go with car in direction pointe dby wheel
-        // https://hub.jmonkeyengine.org/t/solved-rotating-vector3f-by-angle/36168/7
-        Quaternion newQ = new Quaternion();
-        
-        if (right){
-            newQ.fromAngleAxis(STEER_ANGLE, new Vector3f(0, 0, -1));
-        } else if (left){
-            newQ.fromAngleAxis(STEER_ANGLE, new Vector3f(0, 0, 1));
-        } else{
-            newQ.fromAngleAxis(STEER_ANGLE, new Vector3f(0, 0, 0));
-        }
-        frontWheel.setLocalRotation(newQ);
-//        Vector3f newWheelPos = q.mult(currentWheelPosition);
-//        frontWheel.setLocalTranslation(newWheelPos);
-
-        if (up){
-            cords.setY(speed);
-        }
-        else if (down){
-            cords.setY(-speed);
-        }
-        
-        car.move(cords);
+   
     }
     
+    private void handleSteerInput(float tpf){
+        if (right){
+            steerAngle -= tpf * 2f;
+        } else if (left){
+            steerAngle += tpf * 2f;
+        } else{
+            steerAngle = FastMath.interpolateLinear(0.2f, steerAngle, 0);
+        }
+        steerAngle = FastMath.clamp(steerAngle, -STEER_ANGLE, STEER_ANGLE);
+
+    }
+    
+    private void handleAccelerationInput(){
+        if (up){
+            velocity += accel;
+        }
+        else if (down){
+            velocity -= accel;
+        } else{
+            velocity = 0;
+        }
+        velocity = FastMath.clamp(velocity, -maxSpeed, maxSpeed);
+    }
+
     @Override
     protected void controlRender(RenderManager rm, ViewPort vp){
         
