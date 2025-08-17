@@ -20,17 +20,15 @@ import com.jme3.scene.control.AbstractControl;
 public class CarControl extends AbstractControl {
 
     private final float STEER_ANGLE = FastMath.PI / 8;
+    private final float MAX_SPEED = 300f;
+    private float accel = 8f;
 
     public boolean up, down, left, right;
     private float carHeading = 0f;
-    private float accel = 8f;
     private float steerAngle = 0f; // current front wheel angle (radians)
+    private float currAngle = 0f;
+    private float velocity = 0f;      // current velocity in px/sec
 
-        private float maxSpeed = 300f;    // px/sec^2
-        private float wheelBase = 140f;
-        private float velocity = 0f;      // current velocity in px/sec
-        private float theta = 0f;
-            private Vector3f position = new Vector3f();
     private int width, height;
     
     public CarControl(int width, int height){
@@ -48,36 +46,51 @@ public class CarControl extends AbstractControl {
         handleSteerInput(tpf);
         handleAccelerationInput();
         
-        Vector3f fwt = frontWheel.getWorldTranslation();
-        Vector3f bwt = backWheel.getWorldTranslation();
+        Vector3f carLocation = car.getLocalTranslation();
         
-        carHeading = FastMath.atan2(fwt.getY() - bwt.getY(), fwt.getX() - bwt.getX());
-        
-        Vector3f bwDir = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0);
+        // Deal with front wheel location updates on input
+        Vector3f fWheelLocation = carLocation.add(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(140f / 2));
+        Vector3f fwt = frontWheel.getLocalTranslation();
         Vector3f fwDir = new Vector3f(FastMath.cos(carHeading + steerAngle), FastMath.sin(carHeading + steerAngle), 0);
-
-        Vector3f bwNewPos = bwt.add(bwDir.mult(velocity * tpf));
-        Vector3f fwNewPos = fwt.add(fwDir.mult(velocity * tpf));
-        
-        backWheel.setLocalTranslation(bwNewPos);
+        // Calculate new position based on calculated instead of retrieved location
+        // to prevent stacking wheels on top and making the whole thing crumble to horrible dust
+        Vector3f fwNewPos = fWheelLocation.add(fwDir.mult(velocity * tpf));
         frontWheel.setLocalTranslation(fwNewPos);
         
+        // Deal with back wheel location updates on input
+        Vector3f bWheelLocation = carLocation.subtract(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(140f / 2));
+        Vector3f bwt = backWheel.getLocalTranslation();
+        Vector3f bwDir = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0);
+        // Calculate new position based on calculated instead of retrieved location 
+        // to prevent stacking wheels on top and making the whole thing crumble to horrible dust
+        Vector3f bwNewPos = bWheelLocation.add(bwDir.mult(velocity * tpf));
+        backWheel.setLocalTranslation(bwNewPos);
         
-        frontWheel.setLocalRotation(new Quaternion().fromAngleAxis(steerAngle, Vector3f.UNIT_Z));
+        // Update car location
+        car.setLocalTranslation(bwNewPos.add(fwNewPos).divide(2));
+        carHeading = FastMath.atan2(fwt.getY() - bwt.getY(), fwt.getX() - bwt.getX());
 
+       
+        Quaternion fwCurrRot = frontWheel.getLocalRotation();
+        Quaternion ROTATION_ANGLE = new Quaternion().fromAngleAxis(currAngle, Vector3f.UNIT_Z);
+        
+        frontWheel.setLocalRotation(fwCurrRot);
    
     }
     
     private void handleSteerInput(float tpf){
+        float ANGLE = tpf * 2f;
+        
         if (right){
-            steerAngle -= tpf * 2f;
+            steerAngle -= ANGLE;
         } else if (left){
-            steerAngle += tpf * 2f;
+            steerAngle += ANGLE;
         } else{
             steerAngle = FastMath.interpolateLinear(0.2f, steerAngle, 0);
         }
         steerAngle = FastMath.clamp(steerAngle, -STEER_ANGLE, STEER_ANGLE);
-
+        
+        currAngle += steerAngle;
     }
     
     private void handleAccelerationInput(){
@@ -87,9 +100,9 @@ public class CarControl extends AbstractControl {
         else if (down){
             velocity -= accel;
         } else{
-            velocity = 0;
+            velocity = FastMath.interpolateLinear(0.5f, velocity, 0);
         }
-        velocity = FastMath.clamp(velocity, -maxSpeed, maxSpeed);
+        velocity = FastMath.clamp(velocity, -MAX_SPEED, MAX_SPEED);
     }
 
     @Override
