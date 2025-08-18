@@ -19,9 +19,10 @@ import com.jme3.scene.control.AbstractControl;
  */
 public class CarControl extends AbstractControl {
 
-    private final float STEER_ANGLE = FastMath.PI / 8;
-    private final float MAX_SPEED = 300f;
-    private float accel = 8f;
+    private final float MAX_STEER_ANGLE = FastMath.PI / 6;
+    private final float MAX_SPEED = 200f;
+    private final float ACCELERATION = 8f;
+    
 
     public boolean up, down, left, right;
     private float carHeading = 0f;
@@ -39,43 +40,53 @@ public class CarControl extends AbstractControl {
     
     @Override
     protected void controlUpdate(float tpf){        
-        Node car = (Node) spatial;
-        Node frontWheel = (Node) car.getChild("fWheelPivot");
-        Geometry backWheel = (Geometry) car.getChild("backWheel");
-
+        Node carNode = (Node) spatial;
+        Node frontWheel = (Node) carNode.getChild("fWheelPivot");
+        Geometry backWheel = (Geometry) carNode.getChild("backWheel");
+        
         handleSteerInput(tpf);
         handleAccelerationInput();
+        handleCarUpdate(carNode, frontWheel, backWheel, tpf);   
+    
+        Quaternion fwCurrRot = new Quaternion().fromAngleAxis(currAngle, Vector3f.UNIT_Z);
         
-        Vector3f carLocation = car.getLocalTranslation();
+        frontWheel.setLocalRotation(fwCurrRot);
+    } 
+    
+    private void handleCarUpdate(Node carNode, Node frontWheel, Geometry backWheel, float tpf){
+        
+        Node car = (Node) carNode.getChild("carHolder");
+        
+        Vector3f carLocation = carNode.getLocalTranslation();
+        float wheelBase = carNode.getUserData("wheelBase");
+        Vector3f wheelLocation = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(wheelBase / 2);
         
         // Deal with front wheel location updates on input
-        Vector3f fWheelLocation = carLocation.add(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(140f / 2));
+        Vector3f fWheelLocation = carLocation.add(wheelLocation);
         Vector3f fwt = frontWheel.getLocalTranslation();
         Vector3f fwDir = new Vector3f(FastMath.cos(carHeading + steerAngle), FastMath.sin(carHeading + steerAngle), 0);
         // Calculate new position based on calculated instead of retrieved location
-        // to prevent stacking wheels on top and making the whole thing crumble to horrible dust
+        // to prevent shrinking wheel base, stacking wheels on top and making the whole thing crumble to singularity
         Vector3f fwNewPos = fWheelLocation.add(fwDir.mult(velocity * tpf));
         frontWheel.setLocalTranslation(fwNewPos);
         
         // Deal with back wheel location updates on input
-        Vector3f bWheelLocation = carLocation.subtract(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(140f / 2));
+        Vector3f bWheelLocation = carLocation.subtract(wheelLocation);
         Vector3f bwt = backWheel.getLocalTranslation();
         Vector3f bwDir = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0);
         // Calculate new position based on calculated instead of retrieved location 
-        // to prevent stacking wheels on top and making the whole thing crumble to horrible dust
+        // to prevent shrinking wheel base, stacking wheels on top and making the whole thing crumble to singularity
         Vector3f bwNewPos = bWheelLocation.add(bwDir.mult(velocity * tpf));
         backWheel.setLocalTranslation(bwNewPos);
         
-        // Update car location
-        car.setLocalTranslation(bwNewPos.add(fwNewPos).divide(2));
-        carHeading = FastMath.atan2(fwt.getY() - bwt.getY(), fwt.getX() - bwt.getX());
-
-       
-        Quaternion fwCurrRot = frontWheel.getLocalRotation();
-        Quaternion ROTATION_ANGLE = new Quaternion().fromAngleAxis(currAngle, Vector3f.UNIT_Z);
+        // Deal with car updates on input
+        car.setLocalTranslation(carLocation);
+        car.setLocalRotation(new Quaternion().fromAngleAxis(carHeading, Vector3f.UNIT_Z)); // Rotate car by heading
         
-        frontWheel.setLocalRotation(fwCurrRot);
-   
+        // Update car heading and location
+        carNode.setLocalTranslation(bwNewPos.add(fwNewPos).divide(2));
+        carHeading = FastMath.atan2(fwt.getY() - bwt.getY(), fwt.getX() - bwt.getX()); // idk why retrieved
+
     }
     
     private void handleSteerInput(float tpf){
@@ -88,19 +99,17 @@ public class CarControl extends AbstractControl {
         } else{
             steerAngle = FastMath.interpolateLinear(0.2f, steerAngle, 0);
         }
-        steerAngle = FastMath.clamp(steerAngle, -STEER_ANGLE, STEER_ANGLE);
-        
-        currAngle += steerAngle;
+        steerAngle = FastMath.clamp(steerAngle, -MAX_STEER_ANGLE, MAX_STEER_ANGLE);
     }
     
     private void handleAccelerationInput(){
         if (up){
-            velocity += accel;
+            velocity += ACCELERATION;
         }
         else if (down){
-            velocity -= accel;
+            velocity -= ACCELERATION;
         } else{
-            velocity = FastMath.interpolateLinear(0.5f, velocity, 0);
+            velocity = FastMath.interpolateLinear(0.2f, velocity, 0);
         }
         velocity = FastMath.clamp(velocity, -MAX_SPEED, MAX_SPEED);
     }

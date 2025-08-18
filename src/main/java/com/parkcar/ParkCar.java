@@ -7,6 +7,7 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.RenderManager;
 import com.jme3.scene.Geometry;
@@ -25,8 +26,10 @@ public class ParkCar extends SimpleApplication implements ActionListener {
 
     private Picture car;
     private Node carNode;
-    private Vector3f carLocation = new Vector3f(150, 10, 0);
+    private Vector3f carLocation = new Vector3f(300, 150, 0);
     private float carHeading = 0f;
+    private final float WHEEL_BASE = 180f;
+    Vector3f wheelLocation = new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(WHEEL_BASE / 2); // Half from center
 
     public static void main(String[] args) {
         ParkCar app = new ParkCar();
@@ -48,23 +51,28 @@ public class ParkCar extends SimpleApplication implements ActionListener {
         cam.setParallelProjection(true);
         cam.setLocation(new Vector3f(0, 0, 0.5f));
         getFlyByCamera().setEnabled(false);
-      
-        settings.setWidth(5000);
-        settings.setHeight(5000);
-//        car = new Picture("car");
-//        car.setImage(assetManager, "Textures/mainCar.png", true);
-//        car.setWidth(settings.getWidth() / 4);
-//        car.setHeight(settings.getHeight() / 2);
-//        car.setPosition(200, 200);
+
+        Node carHolderNode = new Node("carHolder");
+        
+        car = new Picture("car");
+        car.setImage(assetManager, "Textures/mainCar.png", true);
+        car.setWidth(150);
+        car.setHeight(300);
+        car.setLocalTranslation(-130f, 100f, 0); // allign car over the wheels
+        car.setLocalRotation(new Quaternion().fromAngleAxis(FastMath.PI * -90 / 180, Vector3f.UNIT_Z)); // rotate in wheel direction
 
         carNode = new Node();
+        carNode.setUserData("wheelBase", WHEEL_BASE);
         carNode.addControl(new CarControl(settings.getWidth(), settings.getHeight()));
+        carHolderNode.attachChild(car);
+
         registerInput();
-
-//        carNode.attachChild(car);
         addWheels(carNode);
+        
         carNode.setLocalTranslation(carLocation);
-
+        carNode.attachChild(carHolderNode);
+        
+//        carNode.setLocalRotation(new Quaternion().fromAngleAxis(FastMath.PI / 2, Vector3f.UNIT_Z));
         guiNode.attachChild(carNode);
     }
 
@@ -86,32 +94,32 @@ public class ParkCar extends SimpleApplication implements ActionListener {
         inputManager.addListener(this, up, down, left, right);
     }
 
-    public void addWheels(Node carNode) {
-    
-        float wheelBase = 140f;
-
-        float wheelWidth = 20f;
-        float wheelHeight = 30f;
+    public void addCar(Node carNode){
         
-        Vector3f fWheelLocation = carLocation.add(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(wheelBase / 2));
-        Vector3f bWheelLocation = carLocation.subtract(new Vector3f(FastMath.cos(carHeading), FastMath.sin(carHeading), 0).mult(wheelBase / 2));
+    }
+    
+    public void addWheels(Node carNode) {
+        Quad wheel = new Quad(20f, 30f);
+        Material wheelMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        wheelMat.setColor("Color", ColorRGBA.Blue);
+//        Vector3f fWheelLocation = carLocation.add(wheelLocation);
+//        Vector3f bWheelLocation = carLocation.subtract(wheelLocation);
 
-        Quad frontWheel = new Quad(wheelWidth, wheelHeight);
+//                System.out.println("Front " + carLocation.add(wheelLocation));
+//        System.out.println("Back: " + carLocation.subtract(wheelLocation));
+
+        Quad frontWheel = (Quad) wheel.clone();
         Geometry fGeomWheel = new Geometry("frontWheel", frontWheel);
-        Material fMatWheel = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        fMatWheel.setColor("Color", ColorRGBA.Blue);
-        fGeomWheel.setMaterial(fMatWheel);
-//        fGeomWheel.setLocalTranslation(270, frontWheelY, 0);
+        fGeomWheel.setMaterial(wheelMat);
 
         Node pivotNode = new Node("fWheelPivot");
         pivotNode.attachChild(fGeomWheel);
-        pivotNode.setLocalTranslation(fWheelLocation);
+//        pivotNode.setLocalTranslation(fWheelLocation);
         
-        Quad backWheel = new Quad(wheelWidth, wheelHeight);
+        Quad backWheel = (Quad) wheel.clone();
         Geometry bGeomWheel = new Geometry("backWheel", backWheel);
-        Material bMatWheel = fMatWheel.clone();
-        bGeomWheel.setMaterial(bMatWheel);
-        bGeomWheel.setLocalTranslation(bWheelLocation);
+        bGeomWheel.setMaterial(wheelMat);
+//        bGeomWheel.setLocalTranslation(bWheelLocation);
         
         carNode.attachChild(pivotNode);
         carNode.attachChild(bGeomWheel);
