@@ -60,7 +60,9 @@ dependencies {
   implementation "org.jmonkeyengine:jme3-plugins:$jmeVer"
 
   // Additional Libraries
-
+  implementation 'io.github.jmecn:tmx-loader:0.6.0'
+  implementation 'io.github.jmecn:tmx-renderer:0.6.0'
+  
   // Assets sub-project
   runtimeOnly project(':assets')
 }

@@ -19,15 +19,13 @@ import com.jme3.scene.control.AbstractControl;
  */
 public class CarControl extends AbstractControl {
 
-    private final float MAX_STEER_ANGLE = FastMath.PI / 6;
-    private final float MAX_SPEED = 200f;
+    private final float MAX_STEER_ANGLE = FastMath.PI / 5;
+    private final float MAX_SPEED = 300f;
     private final float ACCELERATION = 8f;
-    
 
     public boolean up, down, left, right;
     private float carHeading = 0f;
     private float steerAngle = 0f; // current front wheel angle (radians)
-    private float currAngle = 0f;
     private float velocity = 0f;      // current velocity in px/sec
 
     private int width, height;
@@ -46,12 +44,12 @@ public class CarControl extends AbstractControl {
         
         handleSteerInput(tpf);
         handleAccelerationInput();
-        handleCarUpdate(carNode, frontWheel, backWheel, tpf);   
-    
-        Quaternion fwCurrRot = new Quaternion().fromAngleAxis(currAngle, Vector3f.UNIT_Z);
-        
-        frontWheel.setLocalRotation(fwCurrRot);
+        handleCarUpdate(carNode, frontWheel, backWheel, tpf);
     } 
+    
+    /*
+    * src: https://engineeringdotnet.blogspot.com/2010/04/simple-2d-car-physics-in-games.html
+    */
     
     private void handleCarUpdate(Node carNode, Node frontWheel, Geometry backWheel, float tpf){
         
@@ -92,9 +90,9 @@ public class CarControl extends AbstractControl {
     private void handleSteerInput(float tpf){
         float ANGLE = tpf * 2f;
         
-        if (right){
+        if (right && !left){
             steerAngle -= ANGLE;
-        } else if (left){
+        } else if (left && !right){
             steerAngle += ANGLE;
         } else{
             steerAngle = FastMath.interpolateLinear(0.2f, steerAngle, 0);
@@ -103,13 +101,13 @@ public class CarControl extends AbstractControl {
     }
     
     private void handleAccelerationInput(){
-        if (up){
+        if (up && !down){
             velocity += ACCELERATION;
         }
-        else if (down){
+        else if (down && !up){
             velocity -= ACCELERATION;
         } else{
-            velocity = FastMath.interpolateLinear(0.2f, velocity, 0);
+            velocity = FastMath.interpolateLinear(0.15f, velocity, 0);
         }
         velocity = FastMath.clamp(velocity, -MAX_SPEED, MAX_SPEED);
     }
