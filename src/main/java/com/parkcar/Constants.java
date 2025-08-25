@@ -18,4 +18,8 @@ public class Constants {
     private final int TILE_SIZE = 32; // px
     private final int TILE_COUNT_HEIGHT = 20;
     
+    private final float WHEEL_BASE = 180f;
+    private final float VEHICLE_WIDTH = 0f;
+    private final float VEHICLE_HEIGHT = 0f;
+    
 }

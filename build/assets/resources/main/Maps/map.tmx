@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.1-99-gec89c545" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="11">
+<map version="1.10" tiledversion="1.11.1-99-gec89c545" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="32" tileheight="32" infinite="0" nextlayerid="9" nextobjectid="16">
  <tileset firstgid="1" source="citypark-tileset.tsx"/>
  <layer id="6" name="ground" width="30" height="20">
   <data encoding="csv">
@@ -50,8 +50,8 @@
 </data>
  </layer>
  <objectgroup id="8" name="objects">
-  <object id="3" name="start_point" x="0.666667" y="449.333" width="222.667" height="128"/>
-  <object id="6" name="end_point" x="876.666" y="1.33333" width="222.667" height="138.667" rotation="90"/>
+  <object id="3" name="start_point" x="0.666667" y="450.333" width="300.667" height="128"/>
+  <object id="6" name="end_point" x="876.666" y="1.33333" width="300.667" height="137.667" rotation="90"/>
   <object id="7" name="death" x="111.75" y="176" width="64.25" height="47.25"/>
   <object id="10" name="death" x="751.625" y="528.375" width="64.25" height="47.25"/>
  </objectgroup>
